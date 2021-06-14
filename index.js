@@ -3,6 +3,10 @@ const mongoose = require('mongoose');
 const { graphqlHTTP } = require('express-graphql');
 
 
+const graphqlSchema = require('./graphql/schema')
+const graphqlResolver = require('./graphql/resolver')
+
+
 const multer = require('multer');
 const bodyParser = require('body-parser');
 
@@ -44,6 +48,23 @@ app.use((req, res, next) => {
 })
 
 
+app.use('/graphql', graphqlHTTP({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true,
+    customFormatErrorFn (error) {
+        if (!error.originalError){
+            return error
+        }
+        const data = error.originalError.data
+        const message = error.message || "An error occurred "
+        const code = error.originalError.code
+
+        return {data: data, status: code, message: message}
+    }
+}))
+
+
 app.use(function (error, req, res, next) {
     console.log(error);
     const status = error.statusCode || 500;
@@ -53,7 +74,7 @@ app.use(function (error, req, res, next) {
 })
 
 
-mongoose.connect({url}, {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false}).then(() => {
+mongoose.connect(url, {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false}).then(() => {
     app.listen(3000)
     console.log('Connected')
 })
